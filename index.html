@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣景點分類地圖 - 拖曳排序與自訂路徑連線</title>
+  <title>台灣景點分類地圖 - Google圖資切換與Notion風格折疊</title>
 
   <!-- Leaflet CSS -->
   <link 
@@ -653,11 +653,214 @@
     .popup-del-btn:hover {
       background: #d9363e;
     }
-  </style>
+  
+    /* === 顯眼的地圖底圖切換按鈕 (右上角) === */
+    .basemap-control {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      font-family: inherit;
+    }
+    .basemap-pill-btn {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border: 1.5px solid #cbd5e0;
+      border-radius: 28px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #2b3a4a;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+    .basemap-pill-btn:hover {
+      background: #ffffff;
+      border-color: #2A9D8F;
+      color: #2A9D8F;
+      box-shadow: 0 6px 20px rgba(42, 157, 143, 0.28);
+      transform: translateY(-1px);
+    }
+    .basemap-pill-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+    .basemap-pill-arrow {
+      font-size: 9px;
+      color: #718096;
+      transition: transform 0.2s ease;
+      margin-left: 2px;
+    }
+    .basemap-control.open .basemap-pill-arrow {
+      transform: rotate(180deg);
+    }
+    .basemap-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 270px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(14px);
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      animation: basemapFadeIn 0.18s ease-out;
+      z-index: 1001;
+    }
+    @keyframes basemapFadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .basemap-dropdown-header {
+      padding: 9px 14px;
+      background: #f7fafc;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 11px;
+      font-weight: 700;
+      color: #718096;
+      letter-spacing: 0.5px;
+    }
+    .basemap-opt {
+      padding: 10px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #f7fafc;
+      transition: background 0.15s ease;
+    }
+    .basemap-opt:last-child {
+      border-bottom: none;
+    }
+    .basemap-opt:hover {
+      background: #f0fdf4;
+    }
+    .basemap-opt.active {
+      background: #e6fffa;
+    }
+    .opt-bullet {
+      font-size: 13px;
+      color: #cbd5e0;
+      margin-top: 1px;
+      line-height: 1;
+    }
+    .basemap-opt.active .opt-bullet {
+      color: #2A9D8F;
+    }
+    .opt-info {
+      flex: 1;
+    }
+    .opt-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+    .basemap-opt.active .opt-name {
+      color: #2A9D8F;
+    }
+    .opt-desc {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    /* === Notion 風格折疊按鈕樣式 === */
+    .cat-expand-btn {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4a5568;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .cat-expand-btn:hover {
+      background: #edf2f7;
+      color: #2b3a4a;
+      border-color: #cbd5e0;
+    }
+    .notion-toggle-arrow {
+      font-size: 9px;
+      line-height: 1;
+      display: inline-block;
+      transition: transform 0.18s ease;
+      color: #718096;
+    }
+    .cat-expand-btn:hover .notion-toggle-arrow {
+      color: #2b3a4a;
+    }
+</style>
 </head>
 <body>
 
-  <div id="map"></div>
+  
+  <!-- 顯眼的地圖底圖切換按鈕 (右上角) -->
+  <div class="basemap-control" id="basemapControl">
+    <button class="basemap-pill-btn" id="basemapPillBtn" onclick="toggleBasemapMenu(event)" title="點擊切換地圖底圖 (Google / OSM / Esri)">
+      <span class="basemap-pill-icon">🗺️</span>
+      <span class="basemap-pill-text">底圖：<strong id="currentBasemapName">Google 街道圖</strong></span>
+      <span class="basemap-pill-arrow">▼</span>
+    </button>
+    <div class="basemap-dropdown" id="basemapDropdown" style="display: none;">
+      <div class="basemap-dropdown-header">選擇地圖底圖</div>
+      <div class="basemap-opt active" data-id="google_streets" onclick="setBaseMap('google_streets')">
+        <span class="opt-bullet">●</span>
+        <div class="opt-info">
+          <div class="opt-name">Google 繁中街道圖 (推薦)</div>
+          <div class="opt-desc">最熟悉的 Google 台灣標準街道圖</div>
+        </div>
+      </div>
+      <div class="basemap-opt" data-id="google_hybrid" onclick="setBaseMap('google_hybrid')">
+        <span class="opt-bullet">○</span>
+        <div class="opt-info">
+          <div class="opt-name">Google 衛星混合圖</div>
+          <div class="opt-desc">高清衛星空照 ＋ 道路地名</div>
+        </div>
+      </div>
+      <div class="basemap-opt" data-id="google_terrain" onclick="setBaseMap('google_terrain')">
+        <span class="opt-bullet">○</span>
+        <div class="opt-info">
+          <div class="opt-name">Google 地形圖</div>
+          <div class="opt-desc">等高線與山勢立體陰影</div>
+        </div>
+      </div>
+      <div class="basemap-opt" data-id="osm_hot" onclick="setBaseMap('osm_hot')">
+        <span class="opt-bullet">○</span>
+        <div class="opt-info">
+          <div class="opt-name">OpenStreetMap (HOT)</div>
+          <div class="opt-desc">開源人道救援圖資、色彩柔和詳細</div>
+        </div>
+      </div>
+      <div class="basemap-opt" data-id="esri_streets" onclick="setBaseMap('esri_streets')">
+        <span class="opt-bullet">○</span>
+        <div class="opt-info">
+          <div class="opt-name">Esri 街道圖</div>
+          <div class="opt-desc">全球高解析街道渲染圖資</div>
+        </div>
+      </div>
+      <div class="basemap-opt" data-id="esri_topo" onclick="setBaseMap('esri_topo')">
+        <span class="opt-bullet">○</span>
+        <div class="opt-info">
+          <div class="opt-name">Esri 等高線地形圖</div>
+          <div class="opt-desc">戶外百岳步道立體地形圖</div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div id="map"></div>
 
   <!-- 面板開啟切換按鈕 -->
   <button id="openPanelBtn" class="panel-toggle-btn" style="display: none;">
@@ -831,17 +1034,40 @@
     Object.keys(categories).forEach(c => categoryVisibility[c] = true);
     let expandedCategories = {};
 
-    // 1. 初始化地圖
+    // 1. 初始化地圖與底圖庫
     const map = L.map('map', {
       center: [23.97, 120.98],
-      zoom: 7
+      zoom: 7,
+      zoomControl: false
+    });
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // Google 地圖圖資 (繁體中文)
+    const googleStreets = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=zh-TW', {
+      maxZoom: 20,
+      subdomains: ['0', '1', '2', '3'],
+      attribution: '&copy; Google Maps'
     });
 
+    const googleHybrid = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=zh-TW', {
+      maxZoom: 20,
+      subdomains: ['0', '1', '2', '3'],
+      attribution: '&copy; Google Maps'
+    });
+
+    const googleTerrain = L.tileLayer('https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&hl=zh-TW', {
+      maxZoom: 20,
+      subdomains: ['0', '1', '2', '3'],
+      attribution: '&copy; Google Maps'
+    });
+
+    // OpenStreetMap 人道救援底圖
     const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    });
 
+    // Esri 街道與地形底圖
     const esriStreets = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: 'Tiles &copy; Esri'
@@ -852,11 +1078,70 @@
       attribution: 'Tiles &copy; Esri'
     });
 
-    L.control.layers({
-      "OpenStreetMap (開放圖資)": osmHot,
-      "Esri 街道底圖 (全球高解析)": esriStreets,
-      "Esri 地形底圖 (山勢等高線)": esriTopo
-    }).addTo(map);
+    const baseMaps = {
+      'google_streets': { layer: googleStreets, name: 'Google 街道圖' },
+      'google_hybrid': { layer: googleHybrid, name: 'Google 衛星混合圖' },
+      'google_terrain': { layer: googleTerrain, name: 'Google 地形圖' },
+      'osm_hot': { layer: osmHot, name: 'OSM 人道救援圖' },
+      'esri_streets': { layer: esriStreets, name: 'Esri 街道圖' },
+      'esri_topo': { layer: esriTopo, name: 'Esri 立體地形圖' }
+    };
+
+    let currentBasemapKey = localStorage.getItem('map_basemap') || 'google_streets';
+    if (!baseMaps[currentBasemapKey]) currentBasemapKey = 'google_streets';
+    baseMaps[currentBasemapKey].layer.addTo(map);
+
+    function setBaseMap(key) {
+      if (!baseMaps[key]) return;
+      Object.keys(baseMaps).forEach(k => {
+        if (map.hasLayer(baseMaps[k].layer)) {
+          map.removeLayer(baseMaps[k].layer);
+        }
+      });
+      baseMaps[key].layer.addTo(map);
+      currentBasemapKey = key;
+      localStorage.setItem('map_basemap', key);
+
+      // 更新按鈕文字與選單高亮
+      const label = document.getElementById('currentBasemapName');
+      if (label) label.textContent = baseMaps[key].name;
+
+      document.querySelectorAll('.basemap-opt').forEach(opt => {
+        const isMatch = opt.dataset.id === key;
+        opt.classList.toggle('active', isMatch);
+        const bullet = opt.querySelector('.opt-bullet');
+        if (bullet) bullet.textContent = isMatch ? '●' : '○';
+      });
+
+      // 關閉下拉選單
+      const menu = document.getElementById('basemapMenu');
+      const ctrl = document.getElementById('basemapControl');
+      if (menu) menu.style.display = 'none';
+      if (ctrl) ctrl.classList.remove('open');
+    }
+
+    function toggleBasemapMenu(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('basemapMenu');
+      const ctrl = document.getElementById('basemapControl');
+      const isVisible = menu.style.display !== 'none';
+      menu.style.display = isVisible ? 'none' : 'block';
+      ctrl.classList.toggle('open', !isVisible);
+    }
+
+    document.addEventListener('click', (e) => {
+      const ctrl = document.getElementById('basemapControl');
+      const menu = document.getElementById('basemapMenu');
+      if (ctrl && menu && !ctrl.contains(e.target)) {
+        menu.style.display = 'none';
+        ctrl.classList.remove('open');
+      }
+    });
+
+    // 初始化選單狀態
+    setTimeout(() => {
+      setBaseMap(currentBasemapKey);
+    }, 50);
 
     // 2. 向量圖釘產生函式
     function createColorIcon(color) {
@@ -1167,8 +1452,9 @@
               </span>
             </div>
             <div class="cat-actions">
-              <button class="cat-expand-btn" title="查看此分類儲存的地點清單">
-                ${isExpanded ? '▲ 收合' : '▼ 清單'}
+              <button class="cat-expand-btn" title="${isExpanded ? '點擊收合景點清單' : '點擊展開景點清單'}">
+                <span class="notion-toggle-arrow">${isExpanded ? '▼' : '▶'}</span>
+                <span>${isExpanded ? '收合' : '清單'}</span>
               </button>
               <button class="cat-del-btn" onclick="deleteCategoryWithPlaces('${cat}')" title="刪除此分類及該分類下的所有地點">🗑️</button>
             </div>
