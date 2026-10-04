@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+  <html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣景點分類地圖</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { display: flex; height: 100vh; background: #f3f4f6; color: #1f2937; overflow: hidden; }
+        #sidebar { width: 360px; background: #ffffff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .header { background: #4f46e5; color: white; padding: 20px; }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+    .filter-section { padding: 16px; border-bottom: 1px solid #e5e7eb; }
+    .filter-section label { font-size: 13px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px; }
+    .filter-section select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb; font-size: 14px; outline: none; }
+    .list-header { padding: 10px 16px; background: #f9fafb; font-size: 12px; color: #6b7280; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; }
+        #spotList { flex: 1; overflow-y: auto; padding: 12px; }
+        .spot-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; cursor: grab; transition: all 0.2s; }
+    .spot-card:hover { border-color: #6366f1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .spot-card.dragging { opacity: 0.4; border: 2px dashed #4f46e5; }
+    .spot-info { display: flex; align-items: center; gap: 12px; }
+    .spot-num { width: 24px; height: 24px; border-radius: 50%; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .spot-title { font-size: 14px; font-weight: 600; color: #111827; }
+    .spot-cat { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .drag-handle { color: #9ca3af; font-size: 16px; }
+    #map-container { flex: 1; position: relative; background: #eef2ff; display: flex; align-items: center; justify-content: center; }
+    #map-svg { width: 100%; height: 100%; max-width: 800px; max-height: 900px; }
+    .pin { cursor: pointer; transition: transform 0.2s; }
+    .pin:hover { transform: scale(1.3); }
+    .pin-circle { fill: #ef4444; stroke: #ffffff; stroke-width: 2; }
+          .pin-text { fill: white; font-size: 10px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; }
+    .route-line { stroke: #4f46e5; stroke-width: 3; stroke-dasharray: 6 4; fill: none; opacity: 0.8; }
+    .info-box { position: absolute; bottom: 20px; right: 20px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; max-width: 280px; display: none; }
+    .info-box h3 { font-size: 16px; font-weight: 700; color: #111827; }
+    .info-box span { font-size: 12px; color: #4f46e5; font-weight: 600; display: inline-block; margin: 4px 0; }
+    .info-box p { font-size: 13px; color: #4b5563; }
+  </style>
+    </head>
+    <body>
+      <div id="sidebar">
+        <div class="header">
+          <h1>台灣景點分類地圖</h1>
+          <p>支援分類篩選、拖曳排序與路徑連線</p>
+        </div>
+        <div class="filter-section">
+          <label for="categoryFilter">分類篩選</label>
+          <select id="categoryFilter">
+            <option value="all">全部景點</option>
+            <option value="nature">自然景觀</option>
+            <option value="history">歷史古蹟</option>
+            <option value="food">美食夜市</option>
+            <option value="landmark">現代地標</option>
+          </select>
+        </div>
+        <div class="list-header">
+          <span>景點列表 (可拖曳調整順序)</span>
+          <span id="spotCount">0 個景點</span>
+        </div>
+        <div id="spotList"></div>
+      </div>
+
+      <div id="map-container">
+        <svg id="map-svg" viewBox="0 0 500 600">
+          <path d="M260,60 Q320,100 350,180 T320,300 T280,450 T220,540 T180,500 T170,380 T190,240 T220,120 Z" fill="#d1fae5" stroke="#10b981" stroke-width="3" />
+          <path id="routeLine" class="route-line" d="" />
+          <g id="pinsGroup"></g>
+        </svg>
+        <div id="infoBox" class="info-box">
+          <h3 id="infoTitle"></h3>
+          <span id="infoCat"></span>
+          <p id="infoDesc"></p>
+        </div>
+      </div>
+
+      <script>
+        const spotsData = [
+{ id: 1, name: '台北101', category: 'landmark', catName: '現代地標', x: 290, y: 100, desc: '台灣知名地標摩天樓' },
+    { id: 2, name: '國立故宮博物院', category: 'history', catName: '歷史古蹟', x: 280, y: 85, desc: '典藏豐富的中華文化瑰寶' },
+{ id: 3, name: '士林夜市', category: 'food', catName: '美食夜市', x: 270, y: 95, desc: '台北代觀光夜市' },
+{ id: 4, name: '九份老街', category: 'history', catName: '歷史古蹟', x: 320, y: 80, desc: '山城小鎮與懷舊風情' },
+{ id: 5, name: '陽明山國家公園', category: 'nature', catName: '自然景觀', x: 275, y: 70, desc: '火山地貌與豐富自然生態' },
+{ id: 6, name: '日月潭', category: 'nature', catName: '自然景觀', x: 220, y: 260, desc: '台灣知名高山湖泊點' },
+{ id: 7, name: '阿里山森林遊樂區', category: 'nature', catName: '然景觀', x: 210, y: 310, desc: '日出、雲海、神木與森林鐵道' },
+{ id: 8, name: '赤崁樓', category: 'history', catName: '歷史古', x: 190, y: 380, desc: '台南古蹟表建築' },
+{ id: 9, name: '六合夜市', category: 'food', catName: '美食夜市', x: 195, y: 440, desc: '高雄著名國際觀光夜市' },
+{ id: 10, name: '太魯閣國家公園', category: 'nature', catName: '自然景觀', x: 290, y: 220, desc: '壯麗的大理岩峽谷景觀' }
+    ];
+
+    let currentSpots = [...spotsData];
+
+    function render() {
+            const listContainer = document.getElementById('spotList');
+      const pinsGroup = document.getElementById('pinsGroup');
+      const routeLine = document.getElementById('routeLine');
+      const spotCount = document.getElementById('spotCount');
+
+      listContainer.innerHTML = '';
+              pinsGroup.innerHTML = '';
+                      spotCount.textContent = `${currentSpots.length} 個景點`;
+
+      let pathD = '';
+
+      currentSpots.forEach((spot, index) => {
+                const card = document.createElement('div');
+                card.className = 'spot-card';
+        card.draggable = true;
+        card.dataset.index = index;
+
+        card.innerHTML = `
+                    <div class="spot-info">
+                      <div class="spot-num">${index + 1}</div>
+                      <div>
+                        <div class="spot-title">${spot.name}</div>
+                        <div class="spot-cat">${spot.catName}</div>
+                      </div>
+                    </div>
+                    <div class="drag-handle">☰</div>
+                  `;
+
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+        card.addEventListener('click', () => showInfo(spot));
+
+        listContainer.appendChild(card);
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'pin');
+        g.setAttribute('transform', `translate(${spot.x}, ${spot.y})`);
+        g.onclick = () => showInfo(spot);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', '12');
+        circle.setAttribute('class', 'pin-circle');
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('class', 'pin-text');
+        text.textContent = index + 1;
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        pinsGroup.appendChild(g);
+
+        if (index === 0) {
+          pathD += `M ${spot.x} ${spot.y}`;
+        } else {
+          pathD += ` L ${spot.x} ${spot.y}`;
+        }
+    });
+
+      routeLine.setAttribute('d', pathD);
+}
+
+    function showInfo(spot) {
+            const box = document.getElementById('infoBox');
+      document.getElementById('infoTitle').textContent = spot.name;
+      document.getElementById('infoCat').textContent = spot.catName;
+      document.getElementById('infoDesc').textContent = spot.desc;
+      box.style.display = 'block';
+    }
+
+    let dragSrcIndex = null;
+    function handleDragStart(e) {
+            dragSrcIndex = Number(this.dataset.index);
+      this.classList.add('dragging');
+    }
+    function handleDragOver(e) {
+            e.preventDefault();
+    }
+    function handleDrop(e) {
+            e.preventDefault();
+      const targetIndex = Number(this.dataset.index);
+      if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+        const movedItem = currentSpots.splice(dragSrcIndex, 1)[0];
+        currentSpots.splice(targetIndex, 0, movedItem);
+        render();
+      }
+    }
+    function handleDragEnd() {
+            this.classList.remove('dragging');
+    }
+
+    document.getElementById('categoryFilter').addEventListener('change', (e) => {
+            const cat = e.target.value;
+      if (cat === 'all') {
+        currentSpots = [...spotsData];
+      } else {
+        currentSpots = spotsData.filter(s => s.category === cat);
+      }
+      render();
+});
+
+    render();
+  </script>
+    </body>
+    </html>
