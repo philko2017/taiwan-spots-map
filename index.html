@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣景點分類地圖 - Google圖資切換與Notion風格折疊</title>
+  <title>台灣景點分類地圖 - 集中選單控制與記憶存檔還原</title>
 
   <!-- Leaflet CSS -->
   <link 
@@ -802,64 +802,154 @@
     .cat-expand-btn:hover .notion-toggle-arrow {
       color: #2b3a4a;
     }
+
+    /* === 左側面板底圖選單樣式 === */
+    .basemap-sidebar-section {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 12px;
+    }
+    .sidebar-section-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #2b3a4a;
+      margin-bottom: 6px;
+    }
+    .basemap-sidebar-select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 6px;
+      background-color: #ffffff;
+      color: #2d3748;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .basemap-sidebar-select:focus {
+      border-color: #2A9D8F;
+      box-shadow: 0 0 0 2px rgba(42, 157, 143, 0.2);
+    }
+
+    /* === 存檔與記憶還原區塊樣式 === */
+    .backup-section {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 14px;
+    }
+    .backup-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2b3a4a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .backup-status-text {
+      font-size: 11px;
+      color: #4a5568;
+      margin-bottom: 8px;
+      background: #ffffff;
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid #edf2f7;
+      line-height: 1.4;
+    }
+    .backup-btn-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .btn-backup-action {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .btn-backup-action.save {
+      background: #2A9D8F;
+      color: #ffffff;
+      border: none;
+    }
+    .btn-backup-action.save:hover {
+      background: #21867a;
+      box-shadow: 0 2px 6px rgba(42, 157, 143, 0.3);
+    }
+    .btn-backup-action.load {
+      background: #ffffff;
+      color: #2b3a4a;
+      border: 1px solid #cbd5e0;
+    }
+    .btn-backup-action.load:hover {
+      background: #edf2f7;
+      border-color: #a0aec0;
+    }
+    .backup-file-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-file-sub {
+      flex: 1;
+      background: #ffffff;
+      border: 1px dashed #cbd5e0;
+      border-radius: 4px;
+      padding: 5px 6px;
+      font-size: 11px;
+      color: #4a5568;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .btn-file-sub:hover {
+      background: #edf2f7;
+      color: #2b3a4a;
+      border-color: #718096;
+    }
+    .reset-area-wrapper {
+      margin-top: 10px;
+    }
+    .undo-reset-btn {
+      width: 100%;
+      background: #fffaf0;
+      border: 1px solid #fbd38d;
+      color: #c05621;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px;
+      border-radius: 6px;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      animation: pulseAlert 2s infinite;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(237, 137, 54, 0.4); }
+      50% { box-shadow: 0 0 0 4px rgba(237, 137, 54, 0.15); }
+    }
+    .undo-reset-btn:hover {
+      background: #feebc8;
+    }
 </style>
 </head>
 <body>
 
   
-  <!-- 顯眼的地圖底圖切換按鈕 (右上角) -->
-  <div class="basemap-control" id="basemapControl">
-    <button class="basemap-pill-btn" id="basemapPillBtn" onclick="toggleBasemapMenu(event)" title="點擊切換地圖底圖 (Google / OSM / Esri)">
-      <span class="basemap-pill-icon">🗺️</span>
-      <span class="basemap-pill-text">底圖：<strong id="currentBasemapName">Google 街道圖</strong></span>
-      <span class="basemap-pill-arrow">▼</span>
-    </button>
-    <div class="basemap-dropdown" id="basemapDropdown" style="display: none;">
-      <div class="basemap-dropdown-header">選擇地圖底圖</div>
-      <div class="basemap-opt active" data-id="google_streets" onclick="setBaseMap('google_streets')">
-        <span class="opt-bullet">●</span>
-        <div class="opt-info">
-          <div class="opt-name">Google 繁中街道圖 (推薦)</div>
-          <div class="opt-desc">最熟悉的 Google 台灣標準街道圖</div>
-        </div>
-      </div>
-      <div class="basemap-opt" data-id="google_hybrid" onclick="setBaseMap('google_hybrid')">
-        <span class="opt-bullet">○</span>
-        <div class="opt-info">
-          <div class="opt-name">Google 衛星混合圖</div>
-          <div class="opt-desc">高清衛星空照 ＋ 道路地名</div>
-        </div>
-      </div>
-      <div class="basemap-opt" data-id="google_terrain" onclick="setBaseMap('google_terrain')">
-        <span class="opt-bullet">○</span>
-        <div class="opt-info">
-          <div class="opt-name">Google 地形圖</div>
-          <div class="opt-desc">等高線與山勢立體陰影</div>
-        </div>
-      </div>
-      <div class="basemap-opt" data-id="osm_hot" onclick="setBaseMap('osm_hot')">
-        <span class="opt-bullet">○</span>
-        <div class="opt-info">
-          <div class="opt-name">OpenStreetMap (HOT)</div>
-          <div class="opt-desc">開源人道救援圖資、色彩柔和詳細</div>
-        </div>
-      </div>
-      <div class="basemap-opt" data-id="esri_streets" onclick="setBaseMap('esri_streets')">
-        <span class="opt-bullet">○</span>
-        <div class="opt-info">
-          <div class="opt-name">Esri 街道圖</div>
-          <div class="opt-desc">全球高解析街道渲染圖資</div>
-        </div>
-      </div>
-      <div class="basemap-opt" data-id="esri_topo" onclick="setBaseMap('esri_topo')">
-        <span class="opt-bullet">○</span>
-        <div class="opt-info">
-          <div class="opt-name">Esri 等高線地形圖</div>
-          <div class="opt-desc">戶外百岳步道立體地形圖</div>
-        </div>
-      </div>
-    </div>
-  </div>
+
 <div id="map"></div>
 
   <!-- 面板開啟切換按鈕 -->
@@ -934,6 +1024,21 @@
         <button type="submit" class="btn-submit">＋ 加入此地點至地圖</button>
       </form>
 
+      <!-- 🗺️ 地圖底圖樣式切換 (移至左側集中管理) -->
+      <div class="basemap-sidebar-section">
+        <label for="basemapSelect" class="sidebar-section-label">
+          <span>🗺️ 地圖底圖樣式</span>
+        </label>
+        <select id="basemapSelect" class="basemap-sidebar-select">
+          <option value="google_streets">Google 繁中街道圖 (推薦)</option>
+          <option value="google_hybrid">Google 衛星混合圖 (空照+路名)</option>
+          <option value="google_terrain">Google 地形圖 (山勢陰影)</option>
+          <option value="osm_hot">OpenStreetMap (HOT 人道救援)</option>
+          <option value="esri_streets">Esri 街道圖 (高解析幹道)</option>
+          <option value="esri_topo">Esri 立體地形圖 (等高線)</option>
+        </select>
+      </div>
+
       <!-- 🛣️ 順序連線開關 -->
       <div class="route-toggle-box">
         <label for="routeToggleSwitch" class="route-toggle-label">
@@ -959,7 +1064,35 @@
         <div id="categoryCardsContainer"></div>
       </div>
 
-      <button id="resetDataBtn" class="reset-btn">🔄 重設為初始預設資料</button>
+      <!-- 💾 進度存檔與記憶還原區塊 -->
+      <div class="backup-section">
+        <div class="backup-header">
+          <span>💾 進度存檔與記憶還原</span>
+        </div>
+        <div class="backup-status-text" id="backupStatusText">
+          載入中...
+        </div>
+        <div class="backup-btn-row">
+          <button type="button" class="btn-backup-action save" id="saveSnapshotBtn" title="將目前的分類與所有景點儲存至本地記憶快照">
+            <span>💾 儲存目前進度</span>
+          </button>
+          <button type="button" class="btn-backup-action load" id="loadSnapshotBtn" title="載入先前儲存的進度快照">
+            <span>📂 載入已存記憶</span>
+          </button>
+        </div>
+        <div class="backup-file-row">
+          <button type="button" class="btn-file-sub" id="exportJsonBtn" title="下載 JSON 備份檔到電腦">📥 匯出備份</button>
+          <button type="button" class="btn-file-sub" id="importJsonBtn" title="從電腦上傳 JSON 備份檔">📤 匯入備份</button>
+          <input type="file" id="importJsonFileInput" accept=".json" style="display: none;">
+        </div>
+      </div>
+
+      <div class="reset-area-wrapper">
+        <button id="resetDataBtn" class="reset-btn">🔄 恢復初始預設資料</button>
+        <button id="undoResetBtn" class="undo-reset-btn" style="display: none;">
+          ↩️ 不小心按到重設？點此立即復原剛才的資料
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1102,46 +1235,24 @@
       currentBasemapKey = key;
       localStorage.setItem('map_basemap', key);
 
-      // 更新按鈕文字與選單高亮
-      const label = document.getElementById('currentBasemapName');
-      if (label) label.textContent = baseMaps[key].name;
-
-      document.querySelectorAll('.basemap-opt').forEach(opt => {
-        const isMatch = opt.dataset.id === key;
-        opt.classList.toggle('active', isMatch);
-        const bullet = opt.querySelector('.opt-bullet');
-        if (bullet) bullet.textContent = isMatch ? '●' : '○';
-      });
-
-      // 關閉下拉選單
-      const menu = document.getElementById('basemapMenu');
-      const ctrl = document.getElementById('basemapControl');
-      if (menu) menu.style.display = 'none';
-      if (ctrl) ctrl.classList.remove('open');
-    }
-
-    function toggleBasemapMenu(e) {
-      e.stopPropagation();
-      const menu = document.getElementById('basemapMenu');
-      const ctrl = document.getElementById('basemapControl');
-      const isVisible = menu.style.display !== 'none';
-      menu.style.display = isVisible ? 'none' : 'block';
-      ctrl.classList.toggle('open', !isVisible);
-    }
-
-    document.addEventListener('click', (e) => {
-      const ctrl = document.getElementById('basemapControl');
-      const menu = document.getElementById('basemapMenu');
-      if (ctrl && menu && !ctrl.contains(e.target)) {
-        menu.style.display = 'none';
-        ctrl.classList.remove('open');
+      // 同步左側面板下拉選單
+      const selectEl = document.getElementById('basemapSelect');
+      if (selectEl && selectEl.value !== key) {
+        selectEl.value = key;
       }
-    });
+    }
 
-    // 初始化選單狀態
-    setTimeout(() => {
-      setBaseMap(currentBasemapKey);
-    }, 50);
+    // 監聽左側選單切換底圖
+    const basemapSelectEl = document.getElementById('basemapSelect');
+    if (basemapSelectEl) {
+      basemapSelectEl.value = currentBasemapKey;
+      basemapSelectEl.addEventListener('change', function() {
+        setBaseMap(this.value);
+      });
+    }
+
+    // 初始化底圖
+    setBaseMap(currentBasemapKey);
 
     // 2. 向量圖釘產生函式
     function createColorIcon(color) {
@@ -1911,8 +2022,159 @@
     });
 
     // 重設初始資料
+
+    // ==========================================
+    // 💾 進度存檔、記憶還原與自動防呆系統
+    // ==========================================
+    function updateBackupStatusUI() {
+      const statusEl = document.getElementById('backupStatusText');
+      if (!statusEl) return;
+      const raw = localStorage.getItem('map_backup_snapshot');
+      if (raw) {
+        try {
+          const snapshot = JSON.parse(raw);
+          const pCount = snapshot.places ? snapshot.places.length : 0;
+          const cCount = snapshot.categories ? Object.keys(snapshot.categories).length : 0;
+          statusEl.innerHTML = `已存快照：<strong>${snapshot.timeStr || '未知時間'}</strong><br><span style="color:#718096;">(共 ${pCount} 個景點 / ${cCount} 個分類)</span>`;
+          statusEl.style.color = '#234e52';
+          statusEl.style.background = '#e6fffa';
+          statusEl.style.borderColor = '#b2f5ea';
+        } catch(e) {
+          statusEl.textContent = '快照資料格式有誤';
+        }
+      } else {
+        statusEl.textContent = '尚未建立手動快照 (建議編輯後點擊儲存)';
+        statusEl.style.color = '#718096';
+        statusEl.style.background = '#ffffff';
+        statusEl.style.borderColor = '#edf2f7';
+      }
+    }
+
+    // 1. 儲存目前進度快照 (Save Snapshot)
+    document.getElementById('saveSnapshotBtn').addEventListener('click', function() {
+      const now = new Date();
+      const timeStr = now.toLocaleDateString('zh-TW') + ' ' + now.toLocaleTimeString('zh-TW', { hour12: false });
+      const snapshot = {
+        version: 'v10',
+        timestamp: now.getTime(),
+        timeStr: timeStr,
+        categories: { ...categories },
+        places: [...places],
+        categoryVisibility: { ...categoryVisibility },
+        showRouteLines: showRouteLines,
+        basemap: currentBasemapKey
+      };
+      localStorage.setItem('map_backup_snapshot', JSON.stringify(snapshot));
+      updateBackupStatusUI();
+      alert(`🎉 存檔成功！\n已記錄目前進度 (${timeStr})，共 ${places.length} 個地點。\n未來隨時可點「載入已存記憶」一鍵還原！`);
+    });
+
+    // 2. 載入已存記憶快照 (Load Snapshot)
+    document.getElementById('loadSnapshotBtn').addEventListener('click', function() {
+      const raw = localStorage.getItem('map_backup_snapshot');
+      if (!raw) {
+        alert('目前尚未儲存任何進度快照喔！\n請先點擊「💾 儲存目前進度」建立存檔。');
+        return;
+      }
+      try {
+        const snapshot = JSON.parse(raw);
+        const pCount = snapshot.places ? snapshot.places.length : 0;
+        if (confirm(`確定要載入【${snapshot.timeStr}】儲存的記憶快照嗎？\n(將還原為 ${pCount} 個景點與專屬分類設定)`)) {
+          categories = { ...snapshot.categories };
+          places = [...snapshot.places];
+          if (snapshot.categoryVisibility) categoryVisibility = { ...snapshot.categoryVisibility };
+          if (typeof snapshot.showRouteLines !== 'undefined') {
+            showRouteLines = snapshot.showRouteLines;
+            const routeSwitch = document.getElementById('routeToggleSwitch');
+            if (routeSwitch) routeSwitch.checked = showRouteLines;
+          }
+          if (snapshot.basemap && baseMaps[snapshot.basemap]) {
+            setBaseMap(snapshot.basemap);
+          }
+          saveCategories(categories);
+          savePlaces(places);
+          renderMapContent();
+          updateCategorySelect(lastSelectedCategory);
+          renderCategoryCards();
+          alert('✅ 記憶快照已成功還原！');
+        }
+      } catch(e) {
+        alert('載入快照時發生錯誤，請檢查資料完整性。');
+      }
+    });
+
+    // 3. 匯出 JSON 備份檔 (Export to local file)
+    document.getElementById('exportJsonBtn').addEventListener('click', function() {
+      const now = new Date();
+      const ymd = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const data = {
+        app: 'taiwan-spots-map',
+        exportTime: now.toISOString(),
+        categories: categories,
+        places: places,
+        categoryVisibility: categoryVisibility
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `taiwan_spots_backup_${ymd}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // 4. 匯入 JSON 備份檔 (Import from local file)
+    const importInput = document.getElementById('importJsonFileInput');
+    document.getElementById('importJsonBtn').addEventListener('click', function() {
+      importInput.click();
+    });
+    importInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (!imported.categories || !imported.places) {
+            alert('JSON 備份檔案格式不正確，找不到景點或分類資料！');
+            return;
+          }
+          if (confirm(`確定要匯入此備份檔嗎？共包含 ${imported.places.length} 個景點。`)) {
+            categories = { ...imported.categories };
+            places = [...imported.places];
+            if (imported.categoryVisibility) categoryVisibility = { ...imported.categoryVisibility };
+            saveCategories(categories);
+            savePlaces(places);
+            renderMapContent();
+            updateCategorySelect(lastSelectedCategory);
+            renderCategoryCards();
+            alert('🎉 備份檔已成功匯入！');
+          }
+        } catch(err) {
+          alert('無法解析 JSON 檔案：' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      importInput.value = '';
+    });
+
+    // 5. 強化重設防呆：重設前自動備份 + 撤銷按鈕
+    let lastResetBackup = null;
+    const undoResetBtn = document.getElementById('undoResetBtn');
+
+    // 替換重設監聽器
     document.getElementById('resetDataBtn').addEventListener('click', function() {
-      if (confirm('確定要清除所有自訂內容，恢復為初始預設資料嗎？')) {
+      if (confirm('確定要清除目前所有自訂內容，恢復為初始預設資料嗎？\n(系統會自動為您備份重設前的資料，隨時可復原)')) {
+        // 自動防呆存檔
+        lastResetBackup = {
+          categories: { ...categories },
+          places: [...places],
+          categoryVisibility: { ...categoryVisibility }
+        };
+        localStorage.setItem('map_auto_backup_before_reset', JSON.stringify(lastResetBackup));
+
         localStorage.removeItem('map_categories_v8');
         localStorage.removeItem('map_places_v8');
         localStorage.removeItem('map_categories_v7');
@@ -1927,8 +2189,36 @@
         updateCategorySelect(lastSelectedCategory);
         renderCategoryCards();
         map.setView([23.97, 120.98], 7);
+
+        // 顯示撤銷重設按鈕
+        if (undoResetBtn) undoResetBtn.style.display = 'block';
       }
     });
+
+    // 6. 撤銷重設並復原資料
+    if (undoResetBtn) {
+      undoResetBtn.addEventListener('click', function() {
+        const rawAuto = localStorage.getItem('map_auto_backup_before_reset');
+        if (!rawAuto && !lastResetBackup) {
+          alert('找不到重設前的自動備份！');
+          return;
+        }
+        const data = lastResetBackup || JSON.parse(rawAuto);
+        categories = { ...data.categories };
+        places = [...data.places];
+        if (data.categoryVisibility) categoryVisibility = { ...data.categoryVisibility };
+        saveCategories(categories);
+        savePlaces(places);
+        renderMapContent();
+        updateCategorySelect(lastSelectedCategory);
+        renderCategoryCards();
+        undoResetBtn.style.display = 'none';
+        alert('🎉 已成功復原重設前的所有景點與分類！');
+      });
+    }
+
+    // 初始化備份狀態 UI
+    updateBackupStatusUI();
 
     // 初始載入
     renderMapContent();
